@@ -34,7 +34,7 @@ namespace Test_Example.Controllers
                     while (await dr.ReadAsync())
                     {
                         if (dr["countFT"].ToString().Equals("0"))
-                            return StatusCode(StatusCodes.Status404NotFound);
+                            return NotFound();
                     }
                 }
 
@@ -90,7 +90,7 @@ namespace Test_Example.Controllers
 
                 await tran.CommitAsync();
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 await tran.RollbackAsync();
             }
