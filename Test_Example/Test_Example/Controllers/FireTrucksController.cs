@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Data.Common;
 using System.Data.SqlClient;
 using Test_Example.Models;
 
@@ -10,50 +11,90 @@ namespace Test_Example.Controllers
     public class FireTrucksController : ControllerBase
     {
         [HttpGet("{idFireTruck}")]
-        public IActionResult GetFireTrucks(int idFireTruck)
+        public async Task<IActionResult> GetFireTrucks(int idFireTruck)
         {
             var fireTruckActionDTO = new HashSet<FireTruckActionDTO>();
-            using (var con = new SqlConnection("Data Source=db-mssql;Initial Catalog=s22247;Integrated Security=True"))
-            using (var com = new SqlCommand())
+            var ft = new FireTruck();
+            var afDTO = new List<ActionFiremenDTO>();
+
+            using var con = new SqlConnection("Data Source=db-mssql;Initial Catalog=s22247;Integrated Security=True");
+            using var com = new SqlCommand("select count(idFireTruck) as countFT from FireTruck where IdFireTruck = @IdFireTruck", con);
+
+            com.Parameters.AddWithValue("IdFireTruck", idFireTruck);
+
+            await con.OpenAsync();
+            DbTransaction tran = await con.BeginTransactionAsync();
+            com.Transaction = (SqlTransaction)tran;
+
+            try
             {
-                com.Connection = con;
-                com.CommandText = "select ft.IdFireTruck, ft.OperationalNumber, ft.SpecialEquipment, " +
-                                  "a.StartTime, a.EndTime, fta.AssignmentDate, ffNumber.Firefighters_Number " +
-                                  "from FireTruck_Action fta, FireTruck ft, Action a, (" +
-                                                                                        "select IdAction, COUNT(IdAction) as Firefighters_Number " +
-                                                                                        "from Firefighter_Action " +
-                                                                                        "group by IdAction) ffNumber " +
-                                  "where ffNumber.IdAction = a.IdAction and fta.IdAction = a.IdAction and ft.IdFireTruck = @IdFireTruck";
+                // Checking if FireTruck with id = idFireTruck exists
+                using (var dr = await com.ExecuteReaderAsync())
+                {
+                    while (await dr.ReadAsync())
+                    {
+                        if (dr["countFT"].ToString().Equals("0"))
+                            return StatusCode(StatusCodes.Status404NotFound);
+                    }
+                }
+
+                // Getting FireTruck with id = idFireTruck
+                com.Parameters.Clear();
+                com.CommandText = "select ft.IdFireTruck, ft.OperationalNumber, ft.SpecialEquipment " +
+                                  "from FireTruck ft " +
+                                  "where ft.IdFireTruck = @IdFireTruck";
                 com.Parameters.AddWithValue("IdFireTruck", idFireTruck);
 
-                con.Open();
-                var dr = com.ExecuteReader();
-                while (dr.Read())
+                using (var dr = await com.ExecuteReaderAsync())
                 {
-                    fireTruckActionDTO.Add(new FireTruckActionDTO
+                    while (await dr.ReadAsync())
                     {
-                        FireTruck = new FireTruck
+                        ft = new FireTruck
                         {
                             IdFireTruck = int.Parse(dr["IdFireTruck"].ToString()),
                             OperationalNumber = dr["OperationalNumber"].ToString(),
-                            SpecialEquipment = dr["SpecialEquipment"].ToString().Equals("False") ? 0 : 1
-                        },
-                        Actions = new List<ActionFiremenDTO>
-                        {
-                            new ActionFiremenDTO
-                            {
-                                StartTime = DateTime.Parse(dr["StartTime"].ToString()),
-                                EndTime = DateTime.Parse(dr["EndTime"].ToString()),
-                                NumberOfFireMen = int.Parse(dr["Firefighters_Number"].ToString())
-                            }
-                        },
-                        AssignmentDate = DateTime.Parse(dr["AssignmentDate"].ToString())
-                        
-                    });
-                    return Ok(fireTruckActionDTO);
+                            SpecialEquipment = (bool)dr["SpecialEquipment"]
+                        };
+                    }
                 }
+
+                // getting actions assigned to Firetruck with number of assigned firemen
+                com.Parameters.Clear();
+                com.CommandText = "select a.IdAction, a.StartTime, a.EndTime, fta.AssignmentDate, ffNumber.Firefighters_Number " +
+                                  "from FireTruck_Action fta, Action a, (" +
+                                                                         "select IdAction, COUNT(IdAction) as Firefighters_Number " +
+                                                                         "from Firefighter_Action " +
+                                                                         "group by IdAction) ffNumber " +
+                                  "where ffNumber.IdAction = a.IdAction and fta.IdAction = a.IdAction and fta.IdFireTruck = @IdFireTruck";
+                com.Parameters.AddWithValue("IdFireTruck", idFireTruck);
+
+                using (var dr = await com.ExecuteReaderAsync())
+                {
+
+                    while (await dr.ReadAsync())
+                    {
+                        afDTO.Add(new ActionFiremenDTO
+                        {
+                            StartTime = DateTime.Parse(dr["StartTime"].ToString()),
+                            EndTime = DateTime.Parse(dr["EndTime"].ToString()),
+                            NumberOfFireMen = int.Parse(dr["Firefighters_Number"].ToString()),
+                            AssignmentDate = DateTime.Parse(dr["AssignmentDate"].ToString())
+                        });
+                    }
+                }
+                fireTruckActionDTO.Add(new FireTruckActionDTO
+                {
+                    FireTruck = ft,
+                    Actions = afDTO
+                });
+
+                await tran.CommitAsync();
             }
-            return StatusCode(StatusCodes.Status404NotFound);
+            catch (SqlException ex)
+            {
+                await tran.RollbackAsync();
+            }
+            return Ok(fireTruckActionDTO);
         }
     }
 }

@@ -4,6 +4,6 @@
     {
         public int IdFireTruck { get; set; }
         public string OperationalNumber { get; set; }
-        public int SpecialEquipment { get; set; }
+        public bool SpecialEquipment { get; set; }
     }
 }

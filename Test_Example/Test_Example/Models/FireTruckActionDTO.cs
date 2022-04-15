@@ -4,6 +4,6 @@
     {
         public FireTruck FireTruck { get; set; }
         public List<ActionFiremenDTO> Actions { get; set; }
-        public DateTime AssignmentDate { get; set; }
+        
     }
 }
