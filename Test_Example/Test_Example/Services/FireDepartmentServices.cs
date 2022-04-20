@@ -141,7 +141,7 @@ namespace Test_Example.Services
             return true;
         }
 
-        public async void UpdateActionEndTimeAsync(Models.Action action, SqlCommand com)
+        public async Task UpdateActionEndTimeAsync(Models.Action action, SqlCommand com)
         {
             com.Parameters.Clear();
             com.CommandText = "update Action set EndTime = @EndTime where IdAction = @IdAction";
@@ -150,7 +150,7 @@ namespace Test_Example.Services
             await com.ExecuteReaderAsync();
         }
 
-        public async void PutActionEndTime(Models.Action action)
+        public async Task PutActionEndTime(Models.Action action)
         {
             using var con = new SqlConnection(_configuration.GetConnectionString("DefaultDbCon"));
             using var com = new SqlCommand("", con);
@@ -167,7 +167,7 @@ namespace Test_Example.Services
                 if (!await CheckIfActionUpdatePossibleAsync(action, com))
                     throw new BadRequestException();
 
-                UpdateActionEndTimeAsync(action, com);
+                await UpdateActionEndTimeAsync(action, com);
 
                 await tran.CommitAsync();
             }

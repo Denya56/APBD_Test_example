@@ -21,7 +21,7 @@ namespace Test_Example.Controllers
         {
             try
             {
-                _fireDepartmentServices.PutActionEndTime(action);
+                await _fireDepartmentServices.PutActionEndTime(action);
             }
             catch (NotFoundException)
             {

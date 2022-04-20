@@ -12,7 +12,7 @@ namespace Test_Example.Services
         Task<FireTruckActionDTO> GetFireTruckActionDTOAsync(int idFireTruck);
         Task<bool> CheckIfActionExistsAsync(Models.Action action, SqlCommand com);
         Task<bool> CheckIfActionUpdatePossibleAsync(Models.Action action, SqlCommand com);
-        void UpdateActionEndTimeAsync(Models.Action action, SqlCommand com);
-        void PutActionEndTime(Models.Action action);
+        Task UpdateActionEndTimeAsync(Models.Action action, SqlCommand com);
+        Task PutActionEndTime(Models.Action action);
     }
 }
