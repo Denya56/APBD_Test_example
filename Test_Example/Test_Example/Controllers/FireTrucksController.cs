@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Data.Common;
 using System.Data.SqlClient;
-using Test_Example.Models;
+using Test_Example.DTOs;
+using Test_Example.Services;
 
 namespace Test_Example.Controllers
 {
@@ -10,17 +10,23 @@ namespace Test_Example.Controllers
     [ApiController]
     public class FireTrucksController : ControllerBase
     {
-        [HttpGet("{idFireTruck}")]
-        public async Task<IActionResult> GetFireTrucks(int idFireTruck)
+
+        private readonly IConfiguration _configuration;
+        private IFireDepartmentServices _fireDepartmentServices;
+
+        public FireTrucksController(IConfiguration configuration, FireDepartmentServices fireDepartmentServices)
         {
-            var fireTruckActionDTO = new HashSet<FireTruckActionDTO>();
-            var ft = new FireTruck();
-            var afDTO = new List<ActionFiremenDTO>();
+            _configuration = configuration;
+            _fireDepartmentServices = fireDepartmentServices;
+        }
 
-            using var con = new SqlConnection("Data Source=db-mssql;Initial Catalog=s22247;Integrated Security=True");
-            using var com = new SqlCommand("select count(idFireTruck) as countFT from FireTruck where IdFireTruck = @IdFireTruck", con);
+        [HttpGet("{idFireTruck}")]
+        public async Task<IActionResult> GetFireTruck(int idFireTruck)
+        {
+            var FireTruckActionDTO = new HashSet<FireTruckActionDTO>();
 
-            com.Parameters.AddWithValue("IdFireTruck", idFireTruck);
+            using var con = new SqlConnection(_configuration.GetConnectionString("DefailtDbCon"));
+            using var com = new SqlCommand("", con);
 
             await con.OpenAsync();
             DbTransaction tran = await con.BeginTransactionAsync();
@@ -28,73 +34,22 @@ namespace Test_Example.Controllers
 
             try
             {
-                // Checking if FireTruck with id = idFireTruck exists
-                using (var dr = await com.ExecuteReaderAsync())
+                if (!await _fireDepartmentServices.CheckIfFiretruckExistsAsync(idFireTruck, com))
+                    return NotFound("Firetruck not found");
+
+                FireTruckActionDTO.Add(new FireTruckActionDTO
                 {
-                    while (await dr.ReadAsync())
-                    {
-                        if (dr["countFT"].ToString().Equals("0"))
-                            return NotFound();
-                    }
-                }
-
-                // Getting FireTruck with id = idFireTruck
-                com.Parameters.Clear();
-                com.CommandText = "select ft.IdFireTruck, ft.OperationalNumber, ft.SpecialEquipment " +
-                                  "from FireTruck ft " +
-                                  "where ft.IdFireTruck = @IdFireTruck";
-                com.Parameters.AddWithValue("IdFireTruck", idFireTruck);
-
-                using (var dr = await com.ExecuteReaderAsync())
-                {
-                    while (await dr.ReadAsync())
-                    {
-                        ft = new FireTruck
-                        {
-                            IdFireTruck = int.Parse(dr["IdFireTruck"].ToString()),
-                            OperationalNumber = dr["OperationalNumber"].ToString(),
-                            SpecialEquipment = (bool)dr["SpecialEquipment"]
-                        };
-                    }
-                }
-
-                // getting actions assigned to Firetruck with number of assigned firemen
-                com.Parameters.Clear();
-                com.CommandText = "select a.IdAction, a.StartTime, a.EndTime, fta.AssignmentDate, ffNumber.Firefighters_Number " +
-                                  "from FireTruck_Action fta, Action a, (" +
-                                                                         "select IdAction, COUNT(IdAction) as Firefighters_Number " +
-                                                                         "from Firefighter_Action " +
-                                                                         "group by IdAction) ffNumber " +
-                                  "where ffNumber.IdAction = a.IdAction and fta.IdAction = a.IdAction and fta.IdFireTruck = @IdFireTruck";
-                com.Parameters.AddWithValue("IdFireTruck", idFireTruck);
-
-                using (var dr = await com.ExecuteReaderAsync())
-                {
-
-                    while (await dr.ReadAsync())
-                    {
-                        afDTO.Add(new ActionFiremenDTO
-                        {
-                            StartTime = DateTime.Parse(dr["StartTime"].ToString()),
-                            EndTime = DateTime.Parse(dr["EndTime"].ToString()),
-                            NumberOfFireMen = int.Parse(dr["Firefighters_Number"].ToString()),
-                            AssignmentDate = DateTime.Parse(dr["AssignmentDate"].ToString())
-                        });
-                    }
-                }
-                fireTruckActionDTO.Add(new FireTruckActionDTO
-                {
-                    FireTruck = ft,
-                    Actions = afDTO
+                    FireTruck = await _fireDepartmentServices.GetFireTruckAsync(com),
+                    Actions = await _fireDepartmentServices.GetActionsFiremenDTOAsync(com)
                 });
 
                 await tran.CommitAsync();
             }
-            catch (Exception ex)
+            catch (SqlException)
             {
                 await tran.RollbackAsync();
             }
-            return Ok(fireTruckActionDTO);
+            return Ok(FireTruckActionDTO);
         }
     }
 }

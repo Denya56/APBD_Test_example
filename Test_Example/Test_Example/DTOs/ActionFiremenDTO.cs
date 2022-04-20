@@ -1,4 +1,4 @@
-﻿namespace Test_Example.Models
+﻿namespace Test_Example.DTOs
 {
     public class ActionFiremenDTO
     {
