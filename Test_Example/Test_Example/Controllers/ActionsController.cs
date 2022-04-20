@@ -29,7 +29,8 @@ namespace Test_Example.Controllers
             }
             catch(BadRequestException)
             {
-                return BadRequest();
+                return BadRequest("EndTime cannot be earlier than StartTime " +
+                    "and/or cannot modify action which already has finished");
             }
             return Ok();
         }
