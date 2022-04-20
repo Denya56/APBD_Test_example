@@ -8,9 +8,11 @@ namespace Test_Example.Services
     {
         Task<bool> CheckIfFiretruckExistsAsync(int idFireTruck, SqlCommand com);
         Task<FireTruck> GetFireTruckAsync(SqlCommand com);
-        Task<List<ActionFiremenDTO>> GetActionsFiremenDTOAsync(SqlCommand com);
+        Task<IEnumerable<ActionFiremenDTO>> GetActionsFiremenDTOAsync(SqlCommand com, int idFireTruck);
+        Task<FireTruckActionDTO> GetFireTruckActionDTOAsync(int idFireTruck);
         Task<bool> CheckIfActionExistsAsync(Models.Action action, SqlCommand com);
         Task<bool> CheckIfActionUpdatePossibleAsync(Models.Action action, SqlCommand com);
         void UpdateActionEndTimeAsync(Models.Action action, SqlCommand com);
+        void PutActionEndTime(Models.Action action);
     }
 }

@@ -1,4 +1,5 @@
-﻿using Test_Example.Models
+﻿using Test_Example.Models;
+
 namespace Test_Example.DTOs
 {
     public class FireTruckActionDTO
