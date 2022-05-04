@@ -4,7 +4,7 @@ using Test_Example.Models;
 
 namespace Test_Example.Services
 {
-    interface IFireDepartmentServices
+    public interface IFireDepartmentServices
     {
         Task<bool> CheckIfFiretruckExistsAsync(int idFireTruck, SqlCommand com);
         Task<FireTruck> GetFireTruckAsync(SqlCommand com);

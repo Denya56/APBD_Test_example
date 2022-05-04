@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Data.Common;
-using System.Data.SqlClient;
 using Test_Example.Exceptions;
 using Test_Example.Services;
 
@@ -11,7 +9,8 @@ namespace Test_Example.Controllers
     public class ActionsController : ControllerBase
     {
         private IFireDepartmentServices _fireDepartmentServices;
-        public ActionsController(FireDepartmentServices fireDepartmentServices)
+
+        public ActionsController(IFireDepartmentServices fireDepartmentServices)
         { 
             _fireDepartmentServices = fireDepartmentServices;
         }

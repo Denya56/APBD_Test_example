@@ -79,7 +79,7 @@ namespace Test_Example.Services
         {
             var FireTruckActionDTO = new FireTruckActionDTO();
 
-            using var con = new SqlConnection(_configuration.GetConnectionString("DefailtDbCon"));
+            using var con = new SqlConnection(_configuration.GetConnectionString("DefaultDbCon"));
             using var com = new SqlCommand("", con);
 
             await con.OpenAsync();

@@ -11,7 +11,7 @@ namespace Test_Example.Controllers
     {
         private IFireDepartmentServices _fireDepartmentServices;
 
-        public FireTrucksController(IConfiguration configuration, FireDepartmentServices fireDepartmentServices)
+        public FireTrucksController(IFireDepartmentServices fireDepartmentServices)
         {
             _fireDepartmentServices = fireDepartmentServices;
         }
